@@ -1,0 +1,82 @@
+{
+  "_description": "AI Domain 描述符 — 定义 AI 前沿情报领域的边界。Domain 属于业务层，不属于 spider_core。",
+  "_version": "2.0",
+  "_created": "2026-05-25",
+  "_updated": "2026-06-16",
+
+  "name": "ai",
+  "label": "AI 前沿情报",
+  "status": "active",
+  "pipeline_mode": "two_stage",
+
+  "enhanced_processing": {
+    "enabled": true,
+    "version": "0.5",
+    "modules": [
+      "domains/ai/event_merger.py",
+      "domains/ai/actionability.py",
+      "domains/ai/user_relevance.py",
+      "domains/ai/project_extractor.py",
+      "domains/ai/campus_detector.py"
+    ],
+    "description": "Pre-Claude processing layer: event dedup, A/B/C actionability, profile-driven relevance boost, reproducible project extraction, campus opportunity detection",
+    "fallback": "All modules gracefully degrade to raw items pass-through on failure",
+    "processing_time_target_s": 5
+  },
+
+  "pipeline": {
+    "stage1": {
+      "entry": "../fetch_ai_news.py",
+      "role": "Fetch + Filter + Score",
+      "description": "并行抓取 23 个信息源，关键词打分，去重，多源信号加权"
+    },
+    "stage2": {
+      "entry": "../generate_report.py",
+      "role": "Prompt Build + Claude CLI + Report Write",
+      "description": "构建分析 prompt，调用 Claude CLI 生成报告，写入 Obsidian vault"
+    }
+  },
+
+  "domain_specific": {
+    "sources": {
+      "description": "23 个 AI 信息源，分 6 个 tier",
+      "tiers": ["tier_1_official", "tier_2_tech_trends", "tier_3_community", "tier_4_products", "chinese_sources", "media_sources"],
+      "fetch_methods": ["rss", "github_trending", "anthropic_blog", "meta_blog", "paperswithcode"],
+      "config_location": "../config.json → sources"
+    },
+    "scoring": {
+      "description": "9 条过滤标准 + 关键词匹配 + source weight + multi-source signal",
+      "criteria_count": 9,
+      "min_score_threshold": 15,
+      "code_location": "../fetch_ai_news.py → compute_impact_score()"
+    },
+    "prompts": {
+      "persona": "AI 情报官 — 面向非 AI 从业者",
+      "style": "红牌深度分析 + 黄牌简报 + 周趋势",
+      "template_location": "../prompt_template.md"
+    },
+    "report": {
+      "output_dir": "01_原始素材/情报中心/每日AI情报",
+      "filename": "{date}_AI情报.md",
+      "max_items": 8
+    }
+  },
+
+  "scoring": {
+    "engine": "../../spider_core/scoring/engine.py",
+    "config": "scoring_config.json",
+    "dimensions": ["source_weight", "freshness", "community_heat", "relevance"]
+  },
+
+  "shared_runtime": {
+    "uses_core_modules": ["logger", "network_wait", "windows_utils", "scoring"],
+    "uses_patterns": ["health_report", "fallback_generator"],
+    "core_location": "../../spider_core/"
+  },
+
+  "notable_constraints": [
+    "不要轻易修改 source weights（影响用户情报口味）",
+    "添加新数据源前确认 RSS 可用性",
+    "修改 prompt_template.md 影响报告风格"
+  ]
+}

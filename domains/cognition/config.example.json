@@ -1,0 +1,240 @@
+{
+  "_comment": "Cognition Domain 配置 — 从 每日认知精选 迁移至 小蜘蛛/domains/cognition/",
+  "_last_updated": "2026-05-25",
+  "_source": "每日认知精选/config.json (2026-05-23)",
+  "obsidian": {
+    "vault_path": "<Obsidian Vault>",
+    "output_dir": "01_原始素材/情报中心/每日认知精选",
+    "filename_format": "{date}.md",
+    "index_file": "每日认知精选索引.md",
+    "quality_standards_file": "内容质量标准.md"
+  },
+  "rotation": {
+    "_comment": "3天轮换制: day_of_year % 3 → 2个领域",
+    "cycle": [
+      {
+        "day_mod": 0,
+        "label": "Day 0 — 元认知 + 人性洞察",
+        "domains": [
+          "元认知与底层思维",
+          "人性洞察与社交逻辑"
+        ],
+        "domain_emojis": [
+          "🔍",
+          "🫂"
+        ],
+        "search_topics_cn": [
+          "认知偏误 最新研究",
+          "批判性思维 方法论",
+          "社会心理学 前沿发现",
+          "群体行为 人际关系 底层机制",
+          "决策心理学 判断力"
+        ],
+        "search_topics_en": [
+          "cognitive bias latest research 2026",
+          "critical thinking metacognition study",
+          "social psychology new findings human behavior",
+          "interpersonal dynamics group behavior research",
+          "judgment and decision making psychology"
+        ],
+        "preferred_sources": [
+          "Annual Review of Psychology",
+          "Psychological Science",
+          "Journal of Personality and Social Psychology",
+          "Cognition",
+          "Trends in Cognitive Sciences"
+        ]
+      },
+      {
+        "day_mod": 1,
+        "label": "Day 1 — 商业认知 + 经济学",
+        "domains": [
+          "商业认知与财富思维",
+          "经济学与社会规则"
+        ],
+        "domain_emojis": [
+          "💰",
+          "📊"
+        ],
+        "search_topics_cn": [
+          "创业底层逻辑 财富原理",
+          "一人企业 独立创业 最新趋势",
+          "行为经济学 博弈论 新研究",
+          "制度设计 激励机制 社会规则",
+          "经济独立路径 副业模式"
+        ],
+        "search_topics_en": [
+          "entrepreneurship behavioral economics latest research 2026",
+          "wealth building solopreneur trends",
+          "game theory incentive design new findings",
+          "microeconomics market design behavioral insights",
+          "side hustle independent income research"
+        ],
+        "preferred_sources": [
+          "NBER working papers",
+          "Journal of Political Economy",
+          "American Economic Review",
+          "Harvard Business Review",
+          "MIT Sloan Management Review"
+        ]
+      },
+      {
+        "day_mod": 2,
+        "label": "Day 2 — 心智成熟 + 高效学习",
+        "domains": [
+          "心智成熟与情绪管理",
+          "高效学习与认知破局"
+        ],
+        "domain_emojis": [
+          "🌱",
+          "📖"
+        ],
+        "search_topics_cn": [
+          "焦虑机制 情绪调节 最新研究",
+          "自我认知 内耗破解 方法论",
+          "学习方法论 认知模型 教育心理学",
+          "记忆 间隔效应 提取练习 新发现",
+          "成长型思维 习惯形成 神经科学"
+        ],
+        "search_topics_en": [
+          "anxiety mechanism emotional regulation latest research 2026",
+          "self-awareness self-sabotage psychology study",
+          "learning science spaced repetition retrieval practice",
+          "cognitive load theory educational psychology findings",
+          "growth mindset habit formation neuroscience research"
+        ],
+        "preferred_sources": [
+          "Nature Neuroscience",
+          "Psychological Science",
+          "npj Science of Learning",
+          "Journal of Experimental Psychology",
+          "Clinical Psychology Review"
+        ]
+      }
+    ]
+  },
+  "source_grading": {
+    "S": {
+      "label": "顶级学术期刊/权威出版社",
+      "examples": "Nature, Science, PNAS",
+      "credibility": 5
+    },
+    "A": {
+      "label": "核心学术期刊/知名学者著作",
+      "examples": "核心期刊论文, 知名学者新书",
+      "credibility": 4
+    },
+    "B": {
+      "label": "深度媒体报道/行业报告",
+      "examples": "ScienceDaily, EurekAlert, 36氪深度",
+      "credibility": 3
+    },
+    "C": {
+      "label": "优质自媒体深度文",
+      "examples": "知乎深度回答, 公众号深度分析",
+      "credibility": 2
+    },
+    "D": {
+      "label": "碎片化口水文（不收录）",
+      "examples": "短图文, 无来源观点",
+      "credibility": 0
+    }
+  },
+  "quality": {
+    "min_articles": 4,
+    "min_a_grade_sources": 2,
+    "min_chars_per_article": 300,
+    "min_total_chars": 2000,
+    "max_recent_issues_for_fewshot": 2,
+    "max_fewshot_chars_per_issue": 1200
+  },
+  "claude": {
+    "effort_level": "high",
+    "max_retries": 1
+  },
+  "source_reachability": {
+    "_comment": "2026-10-07 本机实测（Python requests，无代理）。Stage 1 检索时优先从 readable 里挑：rotation.preferred_sources 多为付费墙期刊，本机对其中一部分连 TLS 握手都完不成，列进候选也只是占位——程序抓不到正文就不会收录，等于白跑一轮。这份表随网络环境漂移，改动前重新实测。",
+    "_measured": "2026-10-07",
+    "readable": {
+      "academic_open": [
+        "zenodo.org",
+        "pmc.ncbi.nlm.nih.gov",
+        "pubmed.ncbi.nlm.nih.gov",
+        "arxiv.org",
+        "frontiersin.org",
+        "journals.plos.org",
+        "link.springer.com",
+        "aeaweb.org"
+      ],
+      "news_and_aggregators": [
+        "sciencedaily.com",
+        "eurekalert.org",
+        "psypost.org",
+        "digest.bps.org.uk",
+        "ourworldindata.org",
+        "hbr.org",
+        "philadelphiafed.org"
+      ],
+      "note": "NBER 的 PDF 直链可读，但 nber.org 落地页读不到"
+    },
+    "not_readable": {
+      "tls_handshake_fails": [
+        "sciencedirect.com",
+        "nature.com",
+        "cambridge.org",
+        "ieeexplore.ieee.org",
+        "sloanreview.mit.edu",
+        "nber.org"
+      ],
+      "bot_wall_403": [
+        "dl.acm.org",
+        "tandfonline.com",
+        "mdpi.com",
+        "science.org",
+        "academic.oup.com",
+        "mercatus.org"
+      ]
+    }
+  },
+  "general_sources": {
+    "science_news": [
+      {
+        "name": "ScienceDaily",
+        "url": "https://www.sciencedaily.com",
+        "type": "web_search"
+      },
+      {
+        "name": "EurekAlert",
+        "url": "https://www.eurekalert.org",
+        "type": "web_search"
+      },
+      {
+        "name": "PsyPost",
+        "url": "https://www.psypost.org",
+        "type": "web_search"
+      },
+      {
+        "name": "BPS Research Digest",
+        "url": "https://digest.bps.org.uk",
+        "type": "web_search"
+      }
+    ],
+    "chinese_sources": [
+      {
+        "name": "知乎深度回答",
+        "type": "web_search",
+        "note": "搜索时添加 site:zhihu.com"
+      },
+      {
+        "name": "微信公众号深度文",
+        "type": "web_search",
+        "note": "通过搜狗微信搜索或引用已知优质公众号"
+      },
+      {
+        "name": "36氪/虎嗅深度",
+        "type": "web_search",
+        "note": "商业认知类内容"
+      }
+    ]
+  }
+}

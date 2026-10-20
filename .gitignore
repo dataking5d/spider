@@ -1,0 +1,105 @@
+# ============================================
+# Claude Code — 缓存 / sessions / telemetry
+# ============================================
+.claude/
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# ============================================
+# Node.js (预防性)
+# ============================================
+node_modules/
+
+# ============================================
+# 运行时产物 — logs / 数据 / 遥测
+# ============================================
+logs/
+health/
+data/
+
+# Session & telemetry
+*.jsonl
+*.log
+
+# Runtime memory data (目录结构通过 .gitkeep 保留)
+memory/**/*.json
+# ACP 记忆文件必须入库（上面的通配会连带吃掉它）
+!memory/task_status.json
+
+# ============================================
+# 敏感信息
+# ============================================
+.env
+.env.local
+.env.*.local
+
+# ============================================
+# IDE / OS
+# ============================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.codegraph/
+_backup_*/
+*.bak
+memory/ai/trends.json.bak
+memory/cognition/trends.json.bak
+
+# ============================================
+# 托管方状态 — WorkBuddy 自动记忆与执行记录
+# ============================================
+.workbuddy/
+
+# ============================================
+# 产出目录 — 报告与渲染结果（保留历史文件，仅供未来产出）
+# ============================================
+output/
+
+# 本机配置：含 vault 绝对路径，不入库；仓库提供 config.example.json
+config.json
+
+# 注：reports/ 下的历史报告已在版本库中（224 个），本规则只阻止新增报告被跟踪；
+#     要让已跟踪的 224 个退出索引，需执行 git rm -r --cached reports/（不删除本地文件）。
+reports/
+
+# 飞书推送脚本：写死了私有群 chat_id，不随仓库发布（本地保留，自动化仍可调用）
+push_feishu.py
+
+# 本机运维脚本：含本机绝对路径与 Windows 专用启动逻辑，不随仓库发布
+*.ps1
+*.vbs
+
+# 认知域本机配置（含 vault 路径），仓库提供 config.example.json
+domains/cognition/config.json
+
+# 内部工作文档与记忆：含本机路径、内部审查与决策记录，不随仓库发布
+CLAUDE.md
+memory/
+AUDIT_*.md
+PLAN_*.md
+REVIEW_*.md
+ERRATA_*.md
+
+# 历史代码快照与本地调试产物（不随仓库发布）
+versions/
+_manual_rerun_*/
+_debug_scores.py

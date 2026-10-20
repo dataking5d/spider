@@ -1,0 +1,212 @@
+{
+  "domains": {
+    "ai": {
+      "time": "12:07:00",
+      "phase": "done",
+      "progress": {
+        "done": 20,
+        "total": 20
+      },
+      "sources": [
+        {
+          "name": "OpenAI Blog",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Anthropic Blog (via web scrape)",
+          "status": "ok",
+          "items": 11,
+          "error": null
+        },
+        {
+          "name": "Google DeepMind Blog",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Meta AI Blog (via web scrape)",
+          "status": "ok",
+          "items": 5,
+          "error": null
+        },
+        {
+          "name": "HuggingFace Blog",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Microsoft Research Blog",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Hacker News",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "GitHub Trending Python",
+          "status": "ok",
+          "items": 7,
+          "error": null
+        },
+        {
+          "name": "Papers with Code",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Google News AI",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Reddit r/LocalLLaMA",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Reddit r/ClaudeAI",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "Product Hunt (Atom Feed)",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "量子位",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "雷锋网 AI科技评论",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "36氪",
+          "status": "ok",
+          "items": 0,
+          "error": null
+        },
+        {
+          "name": "MIT Technology Review",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "TechCrunch AI",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "The Verge AI",
+          "status": "ok",
+          "items": 10,
+          "error": null
+        },
+        {
+          "name": "VentureBeat AI",
+          "status": "ok",
+          "items": 7,
+          "error": null
+        }
+      ],
+      "total_items": 16,
+      "failed_count": 0,
+      "label": "AI 前沿情报",
+      "date": "2026-10-20",
+      "scoring": {
+        "pipeline_input": 174,
+        "quality_filtered": 0,
+        "title_dedup_removed": 0,
+        "fuzzy_description_dedup_removed": 0,
+        "topic_dedup_downgraded": 0,
+        "total_removed": 121,
+        "output": 53
+      },
+      "_extra_keys": [
+        "scoring"
+      ]
+    },
+    "cognition": {
+      "time": "12:08:14",
+      "phase": "done",
+      "progress": {
+        "done": 14,
+        "total": 14
+      },
+      "sub_domains": [
+        "心智成熟与情绪管理",
+        "高效学习与认知破局"
+      ],
+      "label": "每日认知精选",
+      "total_items": 4,
+      "failed_count": 0,
+      "date": "2026-10-20"
+    }
+  },
+  "updated": "12:08:14",
+  "health": {
+    "date": "2026-10-20",
+    "grade": "A",
+    "score": 100,
+    "details": {
+      "domains": "2/2 OK",
+      "ai_sources": "20/20 OK",
+      "total_runtime_s": 329,
+      "topic_fingerprints": 270,
+      "memory_days": 129
+    },
+    "checks": [
+      {
+        "check": "all_domains_complete",
+        "status": "ok",
+        "msg": "All 2 domains completed"
+      },
+      {
+        "check": "sources",
+        "status": "ok",
+        "msg": "20/20 sources OK across 2 domains"
+      },
+      {
+        "check": "runtime",
+        "status": "ok",
+        "msg": "Total runtime 330s"
+      },
+      {
+        "check": "dedup",
+        "status": "ok",
+        "msg": "270 topic fingerprints across 2 domains"
+      },
+      {
+        "check": "claude",
+        "status": "ok",
+        "msg": "Claude calls OK"
+      },
+      {
+        "check": "memory",
+        "status": "ok",
+        "msg": "129 days of trend memory across 2 domains"
+      }
+    ],
+    "updated": "12:08:14"
+  }
+}

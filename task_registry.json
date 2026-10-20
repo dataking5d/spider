@@ -1,0 +1,28 @@
+{
+  "_comment": "Spider 任务注册表 — spider_launcher.py 读取此文件并行启动所有已启用任务。timeout_seconds 是 launcher 等待并**终止**任务的硬上限：认知域 2026-10-07 起是两次 CLI 调用（检索 + 撰写，每次上限 600s）加最多 20 次原文抓取，故由 900 提到 1800。",
+  "_last_updated": "2026-06-11",
+
+  "tasks": [
+    {
+      "id": "ai",
+      "label": "AI 前沿情报",
+      "script": "generate_report.py",
+      "enabled": true,
+      "description": "23 源抓取 + Claude 分析 → AI 情报日报"
+    },
+    {
+      "id": "cognition",
+      "label": "每日认知精选",
+      "script": "domains/cognition/curator.py",
+      "enabled": true,
+      "description": "3 日轮换, Claude 搜索+过滤+撰写 → 认知精选日报"
+    }
+  ],
+
+  "settings": {
+    "python": "pythonw.exe",
+    "timeout_seconds": 1800,
+    "network_check": true,
+    "network_timeout_seconds": 14400
+  }
+}

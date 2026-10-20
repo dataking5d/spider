@@ -1,0 +1,225 @@
+{
+  "_description": "Spider Core 能力注册表 — 记录所有 Core 模块、候选模块、Domain Packs",
+  "_updated": "2026-05-27",
+  "_version": "2.7",
+
+  "core_modules": {
+    "logger": {
+      "status": "stable",
+      "path": "core/logger.py",
+      "description": "共享日志引擎 + domain-aware routing — log_event(domain, msg) 自动分流到 logs/{domain}/YYYY-MM-DD.log，log() 保持向后兼容",
+      "signature": {
+        "log": "(msg: str, log_dir: Path | None = None) -> None",
+        "log_event": "(domain: str, msg: str, base_dir: Path | None = None) -> None"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)", "小蜘蛛 (Cognition Domain)"],
+      "extracted": "2026-05-24",
+      "upgraded": "2026-05-26"
+    },
+    "structured_logger": {
+      "status": "stable",
+      "path": "core/structured_logger.py",
+      "description": "结构化日志引擎 — 基于 structlog，SpiderLogger(domain) 输出彩色控制台 + JSONL 文件，支持 stage/task/status/runtime/score/source 等结构化字段，与 core/logger.py 并存",
+      "signature": {
+        "SpiderLogger": "(domain: str, base_dir: Path | None = None) -> SpiderLogger",
+        "info": "(event: str, **fields) -> None",
+        "warning": "(event: str, **fields) -> None",
+        "error": "(event: str, **fields) -> None",
+        "debug": "(event: str, **fields) -> None"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)", "小蜘蛛 (Cognition Domain)"],
+      "extracted": "2026-05-26"
+    },
+    "network_wait": {
+      "status": "stable",
+      "path": "core/network_wait.py",
+      "description": "基于 socket 的网络可用性检查，带超时和重试",
+      "signature": "wait_for_network(host='api.deepseek.com', port=443, timeout=300) -> bool",
+      "used_by": ["小蜘蛛", "每日认知精选"],
+      "extracted": "2026-05-24"
+    },
+    "windows_utils": {
+      "status": "stable",
+      "path": "core/windows_utils.py",
+      "description": "Windows 特定工具 — PATH 修复 + Claudian 配置读取",
+      "exports": ["merge_user_path", "read_claudian_config"],
+      "signature": {
+        "merge_user_path": "() -> None",
+        "read_claudian_config": "(vault_path: Path) -> (str, dict | None)"
+      },
+      "used_by": ["小蜘蛛", "每日认知精选"],
+      "extracted": "2026-05-24"
+    },
+    "scoring": {
+      "status": "stable",
+      "path": "scoring/engine.py",
+      "description": "共享评分引擎 — 5 维度（信源权威/时效性/社区热度/用户相关/长期价值）+ breakdown 输出 + 推荐原因 + 事件级去重",
+      "exports": ["score_items", "deduplicate", "apply_multi_source_boost", "filter_low_quality"],
+      "outputs": ["breakdown (中文维度标签)", "_reasons (人类可读推荐原因)", "_related_sources (事件级信源追踪)"],
+      "dimensions": ["source_weight", "freshness", "community_heat", "relevance", "long_term_value"],
+      "signature": {
+        "score_items": "(items: list, config: dict) -> list",
+        "deduplicate": "(items: list) -> list",
+        "apply_multi_source_boost": "(items: list, boost: int = 10) -> list",
+        "filter_low_quality": "(items: list, patterns: list | None = None) -> list"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)"],
+      "configs": ["domains/ai/scoring_config.json", "domains/cognition/scoring_config.json"],
+      "extracted": "2026-05-25"
+    },
+    "markdown_writer": {
+      "status": "stable",
+      "path": "core/renderer/markdown_writer.py",
+      "description": "共享报告引擎 — domain-aware routing 自动分流到 reports/{domain}/YYYY-MM-DD-{type}.md，支持 YAML frontmatter、原子写入、自动备份。与 logs 结构保持对称",
+      "exports": ["ReportWriter", "write_report"],
+      "signature": {
+        "ReportWriter": "(domain: str, base_dir: Path | None = None) -> ReportWriter",
+        "write": "(content: str, report_type: str = 'ai', date_str: str | None = None) -> Path",
+        "set_frontmatter": "(**fields) -> None",
+        "today_path": "(report_type: str = 'ai') -> Path",
+        "latest_report": "(report_type: str = 'ai') -> Path | None",
+        "write_report": "(domain: str, content: str, report_type: str = 'ai', base_dir: Path | None = None, frontmatter: dict | None = None) -> Path"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)", "小蜘蛛 (Cognition Domain)"],
+      "extracted": "2026-05-27"
+    },
+    "health_writer": {
+      "status": "stable",
+      "path": "core/renderer/health_writer.py",
+      "description": "共享健康/可观测性写入器 — domain-aware routing 到 health/{domain}/YYYY-MM-DD-health.json，结构化 JSON 输出，支持 source_status、pipeline 摘要、extensible extra 字段（retry/telemetry/orchestration/trend_memory 预留）",
+      "exports": ["HealthWriter", "write_health"],
+      "signature": {
+        "HealthWriter": "(domain: str, base_dir: Path | None = None) -> HealthWriter",
+        "set_source_status": "(name: str, status: str, items: int = 0, error: str = '', **extra) -> None",
+        "set_source_batch": "(sources: list[dict]) -> None",
+        "set_pipeline": "(status: str, **fields) -> None",
+        "set_extra": "(**fields) -> None",
+        "write": "(date_str: str | None = None) -> Path",
+        "today_path": "() -> Path",
+        "latest_health": "() -> Path | None",
+        "write_health": "(domain: str, base_dir: Path | None = None, source_status: list[dict] | None = None, pipeline: dict | None = None, extra: dict | None = None, date_str: str | None = None) -> Path"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)", "小蜘蛛 (Cognition Domain)"],
+      "extracted": "2026-05-27"
+    },
+    "trend_memory": {
+      "status": "stable",
+      "path": "core/memory/trend_memory.py",
+      "description": "Domain-local 增量趋势记忆 — 追踪 recurring topics / entities / themes 的频率变化，自动计算 rising/stable/declining 趋势方向，输出 trend_signals_for_prompt() 注入日报。轻量设计：只存关键词+频率，不存全文",
+      "exports": ["TrendMemory"],
+      "signature": {
+        "TrendMemory": "(domain: str, base_dir: Path | None = None) -> TrendMemory",
+        "update": "(keywords: list[str], entities: list[str], themes: list[str], date_str: str | None) -> None",
+        "write": "() -> Path",
+        "evolving_topics": "(direction: str = 'rising', min_frequency: int = 2) -> list[dict]",
+        "recurring_themes": "(min_occurrences: int = 2, window_days: int = 30) -> list[dict]",
+        "emerging_entities": "(min_frequency: int = 2) -> list[dict]",
+        "trend_signals_for_prompt": "() -> str",
+        "snapshot": "() -> dict"
+      },
+      "used_by": ["小蜘蛛 (AI Domain)", "小蜘蛛 (Cognition Domain)"],
+      "extracted": "2026-05-27"
+    }
+  },
+
+  "candidates": {
+    "redis_dedup": {
+      "status": "candidate",
+      "path": "core/dedup/redis_dedup.py",
+      "description": "Redis-backed two-layer dedup: URL Bloom filter + SimHash fuzzy dedup (Hamming <= 3) with 4-block index. Supports graceful degradation when Redis is down.",
+      "signature": {
+        "RedisDedupPipeline": "(redis_url: str, key_prefix: str, logger: SpiderLogger | None, fallback_permissive: bool) -> RedisDedupPipeline",
+        "is_new": "(url: str, content_text: str) -> bool",
+        "filter_and_save": "(url: str, html_content: str) -> bool",
+        "reset": "() -> dict",
+        "stats": "() -> dict"
+      },
+      "dependencies": ["redis-py", "simhash"],
+      "exports": ["RedisDedupPipeline", "DedupPipelineError"],
+      "used_by": ["小蜘蛛 (AI Domain)"],
+      "extracted": "2026-05-26",
+      "notes": "Starts as candidate per lifecycle rules. Promote to stable after 2+ projects adopt it. Redis Stack's BF.ADD/BF.EXISTS could replace the manual bloom implementation."
+    },
+    "claude_cli_runner": {
+      "status": "candidate",
+      "description": "Claude CLI subprocess 调用封装",
+      "found_in": ["小蜘蛛/generate_report.py", "每日认知精选/curate_daily.py"],
+      "pattern": "subprocess.run([claude_exe, '--print', '--dangerously-skip-permissions', '--effort', level, prompt])",
+      "notes": "两个项目调用模式一致。等待第 3 个项目确认接口稳定性后抽离"
+    },
+    "source_scoring": {
+      "status": "candidate",
+      "description": "基于权重和过滤标准的多源信息打分系统",
+      "found_in": ["小蜘蛛/fetch_ai_news.py"],
+      "signature": "score_item(item, criteria, source_weight) -> int",
+      "notes": "目前仅在 小蜘蛛 中使用，但模式通用。待第二个 domain 出现类似需求时升级"
+    },
+    "health_report": {
+      "status": "patterns",
+      "description": "运行结束时的健康状态摘要",
+      "found_in": ["小蜘蛛/generate_report.py", "每日认知精选/curate_daily.py"],
+      "notes": "已升级为 core/renderer/health_writer.py（2026-05-27）。结构化 JSON 输出取代旧的纯文本 health log。旧 patterns/health_report.md 作为设计参考保留"
+    },
+    "fallback_generator": {
+      "status": "patterns",
+      "description": "当 AI 分析失败时生成降级标记文件",
+      "found_in": ["小蜘蛛/generate_report.py", "每日认知精选/curate_daily.py"],
+      "notes": "不抽离代码 — 记录到 patterns/fallback.md。模式一致，具体内容领域相关"
+    }
+  },
+
+  "not_for_extraction": {
+    "obsidian_writer": {
+      "reason": "通用部分太薄（只是 Path.write_text()），两个项目写入格式完全不同"
+    },
+    "build_prompt": {
+      "reason": "已被 generate_report.py 内联取代，属于遗留代码"
+    },
+    "version_tracker": {
+      "reason": "仅 小蜘蛛 使用，逻辑简单。等第二个项目需要版本追踪时再评估"
+    },
+    "index_updater": {
+      "reason": "每日认知精选 特有逻辑，与其他项目无关"
+    },
+    "output_validator": {
+      "reason": "每日认知精选 特有，验证规则与项目 prompt 模板强绑定"
+    }
+  },
+
+  "domains": {
+    "ai": {
+      "descriptor": "../小蜘蛛/domains/ai/descriptor.json",
+      "status": "active",
+      "pipeline_mode": "two_stage",
+      "description": "AI 前沿情报 — 23 源，9 过滤标准，两阶段管道",
+      "shared_runtime": ["logger", "structured_logger", "network_wait", "windows_utils", "markdown_writer", "health_writer", "trend_memory"],
+      "shared_patterns": ["health_report", "fallback_generator"]
+    },
+    "cognition": {
+      "descriptor": "../小蜘蛛/domains/cognition/descriptor.json",
+      "status": "active",
+      "pipeline_mode": "single_stage_claude",
+      "description": "认知精选 — 6 子领域，3 日轮换，Claude 全包。已从独立项目并入小蜘蛛 Domain 体系",
+      "merged_from": "../每日认知精选",
+      "shared_runtime": ["logger", "structured_logger", "network_wait", "windows_utils", "markdown_writer", "health_writer", "trend_memory"],
+      "shared_patterns": ["health_report", "fallback_generator"]
+    }
+  },
+
+  "projects": {
+    "小蜘蛛": {
+      "path": "D:\\.claude\\all_my_projects\\小蜘蛛",
+      "type": "Spider 核心项目",
+      "domain": "ai",
+      "description": "AI 前沿情报日报",
+      "uses_core": ["logger", "network_wait", "windows_utils", "scoring", "redis_dedup", "markdown_writer", "health_writer", "trend_memory"]
+    },
+    "每日认知精选": {
+      "path": "D:\\.claude\\all_my_projects\\每日认知精选",
+      "type": "Spider 项目",
+      "domain": "cognition",
+      "description": "认知精选日报（3 领域轮换）",
+      "uses_core": ["logger", "network_wait", "windows_utils", "markdown_writer", "health_writer", "trend_memory"]
+    }
+  }
+}

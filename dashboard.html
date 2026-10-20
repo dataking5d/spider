@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小蜘蛛 Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:20px;max-width:960px;margin:0 auto}
+h1{font-size:1.3em;margin-bottom:2px}
+.sub{color:#8b949e;font-size:.8em;margin-bottom:12px}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.live-dot.fetching{background:#3fb950;animation:pulse 1s infinite}
+.live-dot.done{background:#58a6ff;animation:none}
+@keyframes pulse{50%{opacity:.3}}
+
+/* domain tabs */
+.tab-bar{display:flex;gap:4px;margin-bottom:12px}
+.tab-btn{background:#161b22;border:1px solid #30363d;color:#8b949e;padding:6px 16px;border-radius:6px 6px 0 0;cursor:pointer;font-size:.82em;transition:all .2s}
+.tab-btn:hover{color:#c9d1d9;border-color:#58a6ff}
+.tab-btn.sel{background:#21262d;color:#58a6ff;border-color:#58a6ff;border-bottom-color:#21262d}
+.tab-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.tab-dot.running{background:#3fb950;animation:pulse 1s infinite}
+.tab-dot.done{background:#58a6ff}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:12px 0}
+.kpi{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 12px;text-align:center}
+.kpi .val{font-size:1.7em;font-weight:700}
+.kpi .lbl{font-size:.72em;color:#8b949e;margin-top:2px}
+.vg{color:#3fb950}.vr{color:#f85149}.vy{color:#d2991d}.vb{color:#58a6ff}
+
+.pbar-wrap{background:#21262d;border-radius:10px;height:8px;margin:10px 0;overflow:hidden}
+.pbar-fill{height:100%;border-radius:10px;transition:width .5s;background:linear-gradient(90deg,#238636,#3fb950)}
+.pbar-fill.has-fail{background:linear-gradient(90deg,#da3633,#f85149,#d2991d,#3fb950)}
+.pbar-fill.indeterminate{width:40% !important;background:linear-gradient(90deg,#238636,#3fb950,#238636);background-size:200% 100%;animation:indeterminate-bar 1.4s ease-in-out infinite}
+@keyframes indeterminate-bar{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+.phase-label{font-size:.8em;color:#8b949e;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+
+/* source grid */
+.src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:5px}
+.src-card{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 10px;font-size:.8em;display:flex;justify-content:space-between;align-items:center;transition:all .3s;flex-wrap:wrap}
+.src-card.ok{border-left:3px solid #3fb950}
+.src-card.fail{border-left:3px solid #f85149;background:#1d1115}
+.src-card.pending{border-left:3px solid #30363d;opacity:.45}
+.src-card .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src-card .it{color:#8b949e;margin:0 8px;font-size:.75em}
+.src-card .bd{font-size:.7em;padding:1px 6px;border-radius:10px;font-weight:600}
+.bd-ok{background:#1b3823;color:#3fb950}
+.bd-fail{background:#3d1520;color:#f85149}
+.bd-pend{background:#1c2128;color:#484f58}
+
+/* cognition domain */
+.subdomain-badges{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.subdomain-badge{background:#1b2b3d;border:1px solid #2d4a6a;color:#58a6ff;padding:6px 14px;border-radius:20px;font-size:.82em}
+
+.summary{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:16px 0;display:none}
+.summary.show{display:block}
+.summary h3{color:#58a6ff;margin-bottom:8px;font-size:.9em}
+.summary pre{font-size:.78em;color:#8b949e;white-space:pre-wrap;font-family:inherit;line-height:1.5}
+
+.empty{text-align:center;padding:60px 20px;color:#484f58}
+.empty .big{font-size:3em;margin-bottom:10px}
+
+.refresh{position:fixed;top:12px;right:18px;font-size:.7em;color:#484f58;z-index:10}
+
+.health-bar{display:flex;align-items:center;gap:10px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.82em}
+.health-grade{font-size:2em;font-weight:800;min-width:42px;text-align:center}
+.health-grade.A{color:#3fb950}.health-grade.B{color:#58a6ff}.health-grade.C{color:#d2991d}.health-grade.D{color:#f0883e}.health-grade.F{color:#f85149}
+.health-detail{color:#8b949e;line-height:1.5}
+.health-detail b{color:#c9d1d9}
+</style>
+</head>
+<body>
+
+<h1>🕷️ 小蜘蛛</h1>
+<div class="sub" id="sub">Connecting...</div>
+
+<div class="refresh" id="rf">⟳</div>
+
+<div class="tab-bar" id="tab-bar"></div>
+<div class="health-bar" id="health-bar" style="display:none"></div>
+<div class="kpi-row" id="kpi"></div>
+<div class="pbar-wrap"><div class="pbar-fill" id="pbar" style="width:0%"></div></div>
+<div class="phase-label" id="phase-label">—</div>
+<div class="src-grid" id="src-grid"></div>
+<div class="empty" id="empty-msg"><div class="big">🕸️</div><p>Waiting for pipeline to start...</p></div>
+<div class="summary" id="summary"></div>
+
+<script>
+const STATUS_URL = '/pipeline_status.json';
+let selectedDomain = null;
+let lastStatus = null;
+
+async function poll() {
+    try {
+        const r = await fetch(STATUS_URL + '?t=' + Date.now());
+        if (!r.ok) throw new Error('no status');
+        lastStatus = await r.json();
+        render(lastStatus);
+        // Poll faster when anything is running, slow down when all done
+        const allDone = lastStatus.domains && Object.values(lastStatus.domains).every(d => d.phase === 'done');
+        document.getElementById('rf').textContent = allDone ? '✓ done' : '⟳ ' + new Date().toLocaleTimeString();
+        setTimeout(poll, allDone ? 5000 : 1000);
+    } catch(e) {
+        // Server is down (pipeline process exited). If we already saw
+        // a fully-done state, render it one final time so dots turn blue
+        // instead of staying green/blinking forever.
+        if (lastStatus && lastStatus.domains &&
+            Object.values(lastStatus.domains).every(d => d.phase === 'done')) {
+            render(lastStatus);
+            document.getElementById('rf').textContent = '✓ done';
+            return;
+        }
+        document.getElementById('rf').textContent = '⟳';
+        setTimeout(poll, 2000);
+    }
+}
+
+function selectDomain(name) {
+    selectedDomain = name;
+    if (lastStatus) render(lastStatus);
+}
+
+function render(s) {
+    const domains = (s && s.domains) || {};
+    const domainNames = Object.keys(domains);
+
+    // No domains yet — show waiting
+    if (domainNames.length === 0) {
+        document.getElementById('tab-bar').innerHTML = '';
+        document.getElementById('kpi').innerHTML = '';
+        document.getElementById('src-grid').innerHTML = '';
+        document.getElementById('phase-label').textContent = '—';
+        document.getElementById('empty-msg').style.display = 'block';
+        document.getElementById('sub').innerHTML = '<span class="live-dot fetching"></span> Waiting for pipeline to start...';
+        return;
+    }
+
+    document.getElementById('empty-msg').style.display = 'none';
+
+    // Auto-select: first running domain, else first non-done, else first
+    if (!selectedDomain || !domains[selectedDomain]) {
+        const running = domainNames.find(d => domains[d].phase !== 'done');
+        selectedDomain = running || domainNames[0];
+    }
+
+    // Tabs
+    let tabs = '';
+    for (const name of domainNames) {
+        const d = domains[name];
+        const sel = name === selectedDomain ? ' sel' : '';
+        const dotCls = d.phase === 'done' ? 'done' : 'running';
+        tabs += `<button class="tab-btn${sel}" onclick="selectDomain('${name}')">
+            <span class="tab-dot ${dotCls}"></span>${esc(d.label || name)}
+        </button>`;
+    }
+    document.getElementById('tab-bar').innerHTML = tabs;
+
+    // Render selected domain
+    renderDomain(selectedDomain, domains[selectedDomain], s);
+
+    // Health bar
+    const hb = document.getElementById('health-bar');
+    if (s.health) {
+        const h = s.health;
+        hb.style.display = 'flex';
+        const checksOk = (h.checks || []).filter(c => c.status === 'ok').length;
+        const checksTotal = (h.checks || []).length;
+        hb.innerHTML =
+            '<span class="health-grade ' + h.grade + '">' + h.grade + '</span>' +
+            '<span class="health-detail">' +
+            '<b>Spider Health ' + h.score + '/100</b><br>' +
+            checksOk + '/' + checksTotal + ' checks · ' + (h.details?.domains || '?') + ' domains · ' + (h.details?.ai_sources || '?') + ' sources · ' + (h.details?.total_runtime_s || '?') + 's' +
+            '</span>';
+    } else {
+        hb.style.display = 'none';
+    }
+}
+
+function renderDomain(name, d, full) {
+    const done = d.progress ? d.progress.done : 0;
+    const total = d.progress ? d.progress.total : 0;
+    const pct = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 0;
+    const items = d.total_items || 0;
+    const failed = d.failed_count || 0;
+    const hasSources = d.sources && d.sources.length > 0;
+    const isDone = d.phase === 'done';
+
+    const phaseNames = {
+        starting: 'Pipeline starting...',
+        fetching: 'Fetching sources',
+        scoring: 'Scoring & deduplication...',
+        fetch_done: 'Fetch complete — building prompt...',
+        building_prompt: 'Building Claude prompt...',
+        analyzing: isDone ? 'Analysis complete' : 'Claude analyzing & writing...',
+        done: 'Complete'
+    };
+    const phaseLabel = phaseNames[d.phase] || d.phase;
+    const dotCls = isDone ? 'done' : 'fetching';
+    const statusLine = hasSources ? `${done}/${total} sources, ${items} items`
+        : (d.sub_domains && d.sub_domains.length > 0 ? d.sub_domains.join(' + ') : '');
+
+    document.getElementById('sub').innerHTML =
+        `<span class="live-dot ${dotCls}"></span> ${esc(d.label || name)} — ${phaseLabel} <span style="font-size:.75em;color:#484f58">(${statusLine})</span>`;
+
+    // KPIs
+    let kpiHtml = kpi(items, 'Items', 'vb') +
+        kpi(failed, 'Failed', failed > 0 ? 'vr' : 'vg') +
+        kpi(d.time || '—', 'Updated', 'vy');
+    if (hasSources) {
+        kpiHtml = kpi(done + '/' + total, 'Sources', 'vb') + kpiHtml;
+    } else if (d.sub_domains && d.sub_domains.length > 0) {
+        kpiHtml = kpi(d.sub_domains.length, 'Sub-domains', 'vb') + kpiHtml;
+    }
+    document.getElementById('kpi').innerHTML = kpiHtml;
+
+    // Progress bar
+    const bar = document.getElementById('pbar');
+    if (hasSources) {
+        bar.style.width = Math.max(pct, done > 0 ? 3 : 0) + '%';
+        bar.className = 'pbar-fill' + (failed > 0 ? ' has-fail' : '');
+    } else if (isDone) {
+        bar.style.width = '100%';
+        bar.className = 'pbar-fill';
+    } else if (d.phase === 'analyzing') {
+        bar.className = 'pbar-fill indeterminate';
+    } else {
+        bar.style.width = d.phase === 'starting' ? '5%' : '30%';
+        bar.className = 'pbar-fill';
+    }
+
+    // Phase label
+    document.getElementById('phase-label').textContent =
+        '▸ ' + (d.label || name).toUpperCase() + ' · ' + phaseLabel.toUpperCase() + (isDone ? ' ✓' : '');
+
+    // Source grid / sub-domain badges
+    let srcHtml = '';
+    if (hasSources) {
+        for (const src of d.sources) {
+            srcHtml += card(src.name, src.status, src.items, src.error);
+        }
+    } else if (d.sub_domains && d.sub_domains.length > 0) {
+        let badges = '<div class="subdomain-badges">';
+        for (const sd of d.sub_domains) {
+            badges += `<span class="subdomain-badge">${esc(sd)}</span>`;
+        }
+        badges += '</div>';
+        srcHtml = badges;
+    }
+    document.getElementById('src-grid').innerHTML = srcHtml;
+
+    // Summary when done
+    const summary = document.getElementById('summary');
+    if (isDone) {
+        summary.className = 'summary show';
+        let lines = [];
+        lines.push(d.label + ' — pipeline complete');
+        if (hasSources) {
+            const okSrcs = d.sources.filter(s => s.status === 'ok').length;
+            const failSrcs = d.sources.filter(s => s.status === 'failed');
+            lines.push(okSrcs + ' sources OK, ' + failSrcs.length + ' failed, ' + items + ' items in report');
+            if (failSrcs.length > 0) {
+                lines.push('');
+                lines.push('Failed sources:');
+                failSrcs.forEach(s => lines.push('  ❌ ' + s.name + ' — ' + (s.error || 'unknown')));
+            }
+        } else {
+            lines.push(items + ' articles curated');
+            lines.push('Sub-domains: ' + (d.sub_domains || []).join(', '));
+        }
+        if (d.extra && d.extra.scoring) {
+            const sc = d.extra.scoring;
+            lines.push('');
+            lines.push('Scoring pipeline:');
+            lines.push('  quality -' + sc.quality_filtered +
+                ' → title dedup -' + sc.title_dedup_removed +
+                ' → fuzzy dedup -' + sc.fuzzy_description_dedup_removed +
+                ' → ' + items + ' out');
+        }
+        summary.innerHTML = '<h3>📋 ' + esc(d.label) + ' Summary</h3><pre>' + lines.join('\n') + '</pre>';
+    } else {
+        summary.className = 'summary';
+    }
+}
+
+function card(name, status, items, error) {
+    const cls = status === 'ok' ? 'ok' : status === 'failed' ? 'fail' : 'pending';
+    const bdCls = status === 'ok' ? 'bd-ok' : status === 'failed' ? 'bd-fail' : 'bd-pend';
+    const icon = status === 'ok' ? 'OK' : status === 'failed' ? 'FAIL' : '···';
+    let h = `<div class="src-card ${cls}">`;
+    h += `<span class="nm">${esc(name)}</span>`;
+    if (status === 'ok' && items > 0) h += `<span class="it">${items}</span>`;
+    h += `<span class="bd ${bdCls}">${icon}</span>`;
+    if (error) h += `<span style="font-size:.65em;color:#f85149;flex-basis:100%">${esc(error).slice(0,60)}</span>`;
+    h += '</div>';
+    return h;
+}
+
+function kpi(val, label, color) {
+    return `<div class="kpi"><div class="val ${color}">${val}</div><div class="lbl">${label}</div></div>`;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+	// Force refresh when tab becomes visible again (sleep/wake recovery)
+	document.addEventListener('visibilitychange', () => {
+	    if (!document.hidden && lastStatus) {
+	        poll();
+	    }
+	});
+
+	poll();
+</script>
+</body>
+</html>

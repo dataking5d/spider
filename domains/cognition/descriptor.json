@@ -1,0 +1,91 @@
+{
+  "_description": "Cognition Domain 描述符 — 定义认知精选领域的边界。从独立项目 每日认知精选 并入小蜘蛛 Domain 体系。",
+  "_version": "1.0",
+  "_created": "2026-05-25",
+  "_merged_from": "../../../每日认知精选",
+
+  "name": "cognition",
+  "label": "每日认知精选",
+  "status": "active",
+  "pipeline_mode": "two_stage",
+
+  "pipeline": {
+    "stage_1": {
+      "entry": "curator.py",
+      "role": "Claude CLI (search only) → candidate JSON → Python fetch of each candidate's body",
+      "tools": "Write,WebSearch (effort=low)",
+      "description": "Claude 只负责检索并列出候选（标题/URL/来源/年份/领域），随后由 Python 抓正文。",
+      "note": "取证必须由 Python 做：本机 CLI 走非 Anthropic 中继，WebFetch 的逐域名安全校验永远失败（2026-10-07 实测）。"
+    },
+    "stage_2": {
+      "entry": "curator.py",
+      "role": "Claude CLI (write only) → draft → validate → publish → Index Update",
+      "tools": "Write",
+      "description": "Claude 只依据 Python 抓到的证据包撰写，Python 负责验收、发布与索引导出。",
+      "note": "validate_output() 会拿证据索引核对「已读材料」并拒绝引用未抓取的 URL。"
+    }
+  },
+
+  "domain_specific": {
+    "sources": {
+      "description": "学术源 + 综合源，S/A/B/C/D 五级可信度",
+      "academic_sources": ["ScienceDaily", "EurekAlert", "PsyPost", "BPS Research Digest"],
+      "chinese_sources": ["知乎", "微信公众号", "36氪/虎嗅"],
+      "preferred_journals_by_rotation": true,
+      "config_location": "config.json → general_sources + rotation.preferred_sources",
+      "reachability": {
+        "config_location": "config.json → source_reachability",
+        "why": "rotation.preferred_sources 是读者的口味，多为付费墙期刊；本机对其中的 sciencedirect / cambridge / ieee 连 TLS 握手都完不成。只把口味写进检索提示词，模型就会返回一批打不开的链接 —— 2026-10-07 实测 14 个候选抓到 0 篇正文。该表把「本机实测能抓到正文的域」一并写进 Stage 1 提示词，并声明冲突时以可抓到正文为准。",
+        "drift": "这是对本机网络的测量，会随网络环境漂移；config 里记有测量日期，改动前重新实测。"
+      }
+    },
+    "scoring": {
+      "description": "三过滤器（depth / landing / anti-platitude）+ source grading（S-D 级）",
+      "method": "Claude 自主判断，非关键词匹配",
+      "filters": ["depth_test (5 whys)", "landing_test (then what?)", "anti_platitude_test (falsifiability)"],
+      "min_a_grade_sources": 2,
+      "template_location": "prompt_template.md → 三道过滤网 + 来源分级"
+    },
+    "rotation": {
+      "description": "3 天轮换，6 个子领域",
+      "algorithm": "day_of_year % 3",
+      "cycle": [
+        "Day 0: 元认知 + 人性洞察",
+        "Day 1: 商业认知 + 经济学",
+        "Day 2: 心智成熟 + 高效学习"
+      ],
+      "config_location": "config.json → rotation"
+    },
+    "prompts": {
+      "persona": "认知策展人 — 面向 18-25 岁中国大学生",
+      "style": "4 篇文章 + YAML frontmatter + 每日行动清单",
+      "template_location": "prompt_template.md"
+    },
+    "report": {
+      "output_dir": "01_原始素材/情报中心/每日认知精选",
+      "filename": "{date}.md",
+      "min_articles": 4,
+      "features": ["YAML frontmatter", "domain sections", "navigation footer", "index auto-update"]
+    }
+  },
+
+  "scoring": {
+    "engine": "../../spider_core/scoring/engine.py",
+    "config": "scoring_config.json",
+    "note": "当前由 Claude 在 prompt 中执行语义评分。scoring_config.json 作为评分标准参考文档。"
+  },
+
+  "shared_runtime": {
+    "uses_core_modules": ["logger", "network_wait", "windows_utils", "output_utils", "evidence"],
+    "uses_patterns": ["health_report", "fallback_generator"],
+    "core_location": "../../spider_core/"
+  },
+
+  "notable_constraints": [
+    "轮换算法 (day_of_year % 3) 不可随意改动",
+    "YAML frontmatter 格式变化会破坏下游消费",
+    "索引原子写入是防御性设计，不可退化为直接覆盖",
+    "不得给子 CLI 授予 WebFetch：本机中继下它的域名安全校验必然失败，加了等于恢复一个只会静默失败的工具",
+    "草稿与候选 JSON 的路径必须在 CLAUDE_CONFIG_DIR 之外（子进程写不了项目内路径）"
+  ]
+}

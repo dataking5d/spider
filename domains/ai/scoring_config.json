@@ -1,0 +1,149 @@
+{
+  "_description": "AI Domain 评分参数 — 驱动 spider_core/scoring/engine.py",
+  "_version": "2.0",
+  "_updated": "2026-05-25",
+
+  "min_total_score": 15,
+  "min_relevance_score": 10,
+
+  "dimension_labels": {
+    "source_weight": "信源权威",
+    "freshness": "时效性",
+    "community_heat": "社区热度",
+    "relevance": "用户相关",
+    "long_term_value": "长期价值"
+  },
+
+  "tiers": {
+    "official":    { "level": 1, "weight": 100, "label": "T1 官方源" },
+    "tech_trends": { "level": 1, "weight": 70,  "label": "T1 技术趋势" },
+    "community":   { "level": 2, "weight": 55,  "label": "T2 社区" },
+    "products":    { "level": 2, "weight": 50,  "label": "T2 产品" },
+    "media":       { "level": 2, "weight": 40,  "label": "T2 媒体" },
+    "chinese":     { "level": 3, "weight": 30,  "label": "T3 中文源" },
+    "unknown":     { "level": 3, "weight": 25,  "label": "T3 未分级" }
+  },
+
+  "dimensions": {
+    "source_weight": {
+      "weight": 1.0,
+      "description": "信源权威度。T1 官方源 (OpenAI/Anthropic/DeepMind/Meta) 权重 100，T2 社区/媒体 40-55，T3 辅助源 25-30。"
+    },
+    "freshness": {
+      "weight": 0.8,
+      "half_life_hours": 48,
+      "base_score": 100,
+      "fresh_threshold_hours": 6,
+      "description": "时效性衰减。48h 半衰，6h 内标记为极新鲜。"
+    },
+    "community_heat": {
+      "weight": 0.6,
+      "field": "points",
+      "scale": 10,
+      "hot_threshold": 100,
+      "description": "社区热度。log10(points+1)×10。100+ 票标记为热议。"
+    },
+    "relevance": {
+      "weight": 1.2,
+      "description": "9 条过滤标准。每匹配一条加对应权重。",
+      "criteria_labels": {
+        "workflow_change": "改变工作流",
+        "productivity_boost": "提升效率",
+        "automation_push": "推动自动化",
+        "lower_barrier": "降低门槛",
+        "content_production": "内容生产变革",
+        "side_hustle": "副业机会",
+        "career_impact": "职业影响",
+        "community_growth": "社区快速增长"
+      },
+      "keywords": {
+        "workflow_change": {
+          "score": 20,
+          "terms": ["workflow", "自动化", "work", "productivity", "效率", "办公", "office", "excel", "ppt", "word", "文档", "email", "邮件", "日程", "calendar", "task", "项目管理"]
+        },
+        "productivity_boost": {
+          "score": 20,
+          "terms": ["faster", "更快", "speed", "加速", "efficient", "节省", "save time", "省时", "一键", "one-click", "automatic", "自动", "batch", "批量"]
+        },
+        "automation_push": {
+          "score": 20,
+          "terms": ["agent", "autonomous", "自主", "automation", "自动化", "browser-use", "computer use", "desktop agent", "coding agent", "编程助手", "auto-fix", "self-healing"]
+        },
+        "lower_barrier": {
+          "score": 20,
+          "terms": ["open source", "开源", "free", "免费", "no-code", "零代码", "low-code", "低代码", "democratize", "人人可用", "for everyone", "for all", "no coding"]
+        },
+        "content_production": {
+          "score": 15,
+          "terms": ["video generation", "视频生成", "image generation", "图片生成", "voice", "语音", "audio", "音乐", "music", "podcast", "content creation", "内容创作", "writing", "写作", "自媒体", "social media"]
+        },
+        "side_hustle": {
+          "score": 15,
+          "terms": ["monetize", "变现", "副业", "side hustle", "freelance", "自由职业", "接单", "赚钱", "income", "revenue", "marketplace", "gig"]
+        },
+        "career_impact": {
+          "score": 15,
+          "terms": ["job", "职业", "工作", "取代", "replace", "裁员", "layoff", "hire", "招聘", "skill", "技能", "reskill", "新岗位", "career", "industry change"]
+        },
+        "community_growth": {
+          "score": 10,
+          "terms": ["github stars", "trending", "growth", "增长", "viral", "爆火", "hot", "热门", "community", "社群"]
+        }
+      }
+    },
+    "long_term_value": {
+      "weight": 0.3,
+      "max_score": 5,
+      "description": "长期价值分 0-5。识别具有持久影响力的技术主题：agent 架构、推理、记忆系统、RL、基础设施演进等。",
+      "topics": [
+        { "label": "Agent 架构", "score": 1, "terms": ["agent", "AI agent", "agentic", "multi-agent", "agent framework", "agent protocol", "agent orchestration", "tool use", "function call", "mcp", "a2a", "agent swarm", "coding agent", "browser agent", "computer use", "desktop agent", "autonomous", "自主", "智能体", "mcp server", "tool calling", "agent-to-agent"] },
+        { "label": "推理能力", "score": 1, "terms": ["reasoning", "reasoning model", "chain of thought", "cot", "inference time", "test-time compute", "o1", "o3", "o4", "deep thinking", "深度思考", "逻辑推理", "inference", "推理"] },
+        { "label": "记忆系统", "score": 1, "terms": ["memory system", "long-term memory", "vector database", "rag", "retrieval", "context window", "persistent memory", "knowledge graph", "embedding", "semantic search", "向量数据库", "检索增强", "语义搜索", "知识库", "knowledge base", "vector search"] },
+        { "label": "强化学习", "score": 1, "terms": ["reinforcement learning", "rlhf", "preference optimization", "dpo", "grpo", "reward model", "reward function", "human feedback", "self-play", "rlvr", "policy gradient", "对齐", "人类反馈", "自我对弈"] },
+        { "label": "基础设施", "score": 1, "terms": ["infrastructure", "gpu", "training cluster", "distributed training", "inference optimization", "quantization", "fine-tun", "lora", "qlora", "distillation", "数据中心", "推理芯片", "量化", "微调", "蒸馏", "nvidia", "h100", "b200", "集群", "训练", "部署"] }
+      ]
+    }
+  },
+
+  "reasons": {
+    "high_tier_source": "顶级信源发布",
+    "very_fresh": "刚刚发布",
+    "community_hot": "社区热议",
+    "long_term_topic": "长期价值: {topic}",
+    "multi_source": "多源验证"
+  },
+
+  "entity_clusters": {
+    "_description": "实体聚类 — 提取标题中的公司/产品/技术实体，共享实体的条目归入同一 cluster。用于在 Stage 2 中提示 Claude 合并同一事件的多源报道。",
+    "companies": [
+      "openai", "anthropic", "google", "deepmind", "meta", "microsoft", "apple", "amazon",
+      "nvidia", "intel", "amd", "tesla", "xai", "mistral", "stability ai", "midjourney",
+      "huggingface", "github", "gitlab", "salesforce", "adobe", "ibm", "oracle",
+      "snowflake", "databricks", "palantir", "cognition", "cursor", "replit",
+      "robinhood", "notion", "canva", "figma", "stripe", "shopify"
+    ],
+    "products": [
+      "gpt-5", "gpt-4", "gpt-4o", "gpt-4.5", "chatgpt", "codex", "dall-e", "sora",
+      "claude", "opus", "sonnet", "haiku",
+      "gemini", "gemma", "veo", "imagen", "alphafold", "alphageometry",
+      "llama", "mistral", "mixtral",
+      "copilot", "bing", "azure",
+      "mcp", "model context protocol",
+      "cursor", "windsurf", "copilot", "codium", "cline",
+      "pytorch", "tensorflow", "jax", "langchain", "llamaindex", "crewai",
+      "qwen", "deepseek", "kimi", "yi ", "ernie", "chatglm",
+      "cuda", "triton", "onnx", "vllm", "ollama",
+      "suno", "elevenlabs", "runway", "pika", "kaiber",
+      "stable diffusion", "flux", "comfyui",
+      "cursor", "devin", "lovable", "bolt", "v0", "replit"
+    ],
+    "technologies": [
+      "agent", "rag", "lora", "qlora", "quantization", "fine-tun",
+      "reinforcement learning", "rlhf", "dpo", "grpo",
+      "transformer", "diffusion", "mamba", "ssm", "moe",
+      "vector database", "knowledge graph", "embedding",
+      "tool calling", "function calling", "computer use",
+      "chain of thought", "test-time compute", "inference-time"
+    ]
+  }
+}

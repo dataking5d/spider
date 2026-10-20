@@ -1,0 +1,32 @@
+{
+  "_description": "Cognition Domain 评分参数 — 当前由 Claude 在 prompt 中执行语义判断，此文件作为评分标准参考文档",
+  "_version": "1.0",
+  "_created": "2026-05-25",
+  "_note": "curator.py 是 Claude-centric 单阶段管道，评分由 Claude 在 prompt 中完成。此 config 记录评分标准，供未来统一到 engine 时使用。",
+
+  "min_total_score": 0,
+
+  "dimensions": {
+    "source_weight": {
+      "weight": 0.7,
+      "description": "信源分级映射为数值: S=100, A=80, B=50, C=25, D=0。硬性要求每期至少 2 条 A 级及以上。"
+    },
+    "freshness": {
+      "weight": 0.6,
+      "half_life_hours": 720,
+      "base_score": 100,
+      "description": "时效性衰减。720 小时（30 天）后分数减半。认知科学研究老化慢，经典研究可回溯但需标注年份。"
+    },
+    "community_heat": {
+      "weight": 0.0,
+      "field": "points",
+      "scale": 10,
+      "description": "不使用社区热度。学术论文和深度分析不以投票数衡量价值。权重设为 0。"
+    },
+    "relevance": {
+      "weight": 1.0,
+      "description": "三过滤器 — 当前由 Claude 语义判断，非关键词匹配: depth_test (5 whys), landing_test (then what?), anti_platitude_test (falsifiability)",
+      "keywords": {}
+    }
+  }
+}

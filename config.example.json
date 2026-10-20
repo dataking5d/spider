@@ -1,0 +1,275 @@
+{
+  "_comment": "AI前沿情报系统 v2 — 四层数据源 + 9条过滤标准",
+  "_last_updated": "2026-09-21",
+  "redis_dedup": {
+    "enabled": true,
+    "redis_url": "redis://localhost:6379/0",
+    "key_prefix": "dedup:ai",
+    "_note": "双层去重: URL Bloom + SimHash模糊去重(Hamming<=3)。Redis不可用时自动降级放行。"
+  },
+  "obsidian": {
+    "vault_path": "~/Obsidian",
+    "report_dir": "01_原始素材/情报中心/每日AI情报",
+    "report_filename_format": "{date}_AI情报.md"
+  },
+  "sources": {
+    "tier_1_official": {
+      "description": "第一层：官方一线AI源 — 第一时间发现真正的AI能力变化",
+      "weight": 100,
+      "max_items_per_source": 10,
+      "feeds": [
+        {
+          "name": "OpenAI Blog",
+          "url": "https://openai.com/blog/rss.xml",
+          "type": "rss",
+          "weight": 100,
+          "category": "official",
+          "note": "RSS confirmed working"
+        },
+        {
+          "name": "Anthropic Blog (via web scrape)",
+          "url": "https://www.anthropic.com/news",
+          "type": "anthropic_blog",
+          "weight": 100,
+          "category": "official",
+          "note": "No RSS — scraping anthropic.com/news HTML. Also backed by Reddit r/ClaudeAI."
+        },
+        {
+          "name": "Google DeepMind Blog",
+          "url": "https://deepmind.google/blog/rss.xml",
+          "type": "rss",
+          "weight": 95,
+          "category": "official",
+          "note": "RSS confirmed working"
+        },
+        {
+          "name": "Meta AI Blog (via web scrape)",
+          "url": "https://ai.meta.com/blog/",
+          "type": "meta_blog",
+          "weight": 90,
+          "category": "official",
+          "note": "No RSS — scraping ai.meta.com/blog HTML. Also backed by Reddit r/facebookai."
+        },
+        {
+          "name": "HuggingFace Blog",
+          "url": "https://huggingface.co/blog/feed.xml",
+          "type": "rss",
+          "weight": 35,
+          "category": "official",
+          "note": "2026-09-21 修复：原走 old.reddit.com/r/huggingface 代理，old.reddit 端点已失效（0 条）。huggingface.co/blog/feed.xml 是官方源，862 条。实测 10 条抓取中 5 条过闸（Your Agent Aced the Task / Give Your Coding Agents a Memory You Own / Async GRPO with LoRA）。⚠️ 该 feed 的 description 为空（desc_len=0），故相关度只能靠标题匹配，且 Redis 跨天 SimHash 的输入退化为「仅标题」。weight 保持 35 未动（原为社区代理定的低权重，现已是官方源，是否上调见 AUDIT）。"
+        },
+        {
+          "name": "Microsoft Research Blog",
+          "url": "https://www.microsoft.com/en-us/research/feed/",
+          "type": "rss",
+          "weight": 85,
+          "category": "official",
+          "note": "2026-09-21 修复：原 blogs.microsoft.com/ai/feed/ 全域 403（反爬，/feed/ 与 blogs.microsoft.com/feed/ 同 403），备选 news.microsoft.com/source/topics/ai/feed/ 为 SSLError。改用微软研究院官方 feed。实测 10 条中 7 条过闸（Orchard / Echoverse / EvoLib）。⚠️ 内容是研究向而非原 AI 营销博客，口味有偏移，weight 保持 85 未动。"
+        }
+      ]
+    },
+    "tier_2_tech_trends": {
+      "description": "第二层：技术趋势与开源生态 — 发现真正开始落地的AI能力",
+      "weight": 70,
+      "max_items_per_source": 15,
+      "feeds": [
+        {
+          "name": "Hacker News",
+          "url": "https://hnrss.org/frontpage",
+          "type": "rss",
+          "weight": 70,
+          "category": "tech_trends"
+        },
+        {
+          "name": "GitHub Trending Python",
+          "url": "https://github.com/trending/python?since=daily",
+          "type": "github_trending",
+          "weight": 65,
+          "category": "tech_trends"
+        },
+        {
+          "name": "Papers with Code",
+          "url": "https://huggingface.co/api/daily_papers",
+          "type": "paperswithcode",
+          "weight": 45,
+          "category": "tech_trends",
+          "note": "HuggingFace daily papers API (paperswithcode.com redirects here)"
+        },
+        {
+          "name": "Google News AI",
+          "url": "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGRqTVhZU0FtVnVHZ0pWVXlnQVAB",
+          "type": "rss",
+          "weight": 50,
+          "category": "tech_trends",
+          "note": "Google News AI topic — good aggregator"
+        }
+      ]
+    },
+    "tier_3_community": {
+      "description": "第三层：社区与真实使用反馈",
+      "weight": 55,
+      "max_items_per_source": 10,
+      "_note_reddit_2026-09-21": "⚠️ Reddit 匿名 .rss 配额实测约为【每窗口 2 个请求】：old.reddit.com 端点全死（0 条）；换 www.reddit.com 后前 2 个成功（各 25 条），第 3 个起 429 —— 间隔 5s 与 8s 均只 2/5，冷却 60s 后 2/2 稳定通过。因此本层只保留 2 个源，恰好卡在配额内；新增第 3 个会让三者随机有一个 429，报告构成变得不确定。删掉的 r/OpenAI、r/singularity、r/MLOps 自加入以来从未贡献过任何条目（权重 55/50/40 也最低）。若 Reddit 再收紧配额，正确做法是删到 1 个或全删，而不是加 sleep —— 管道的稳定性优先级高于源数量。",
+      "feeds": [
+        {
+          "name": "Reddit r/LocalLLaMA",
+          "url": "https://www.reddit.com/r/LocalLLaMA/.rss",
+          "type": "rss",
+          "weight": 65,
+          "category": "community",
+          "note": "2026-09-21 端点从 old.reddit.com 改为 www.reddit.com。本地模型实操反馈，对本用户（跑本地模型）信号最高，故为保留的 2 个之一。"
+        },
+        {
+          "name": "Reddit r/ClaudeAI",
+          "url": "https://www.reddit.com/r/ClaudeAI/.rss",
+          "type": "rss",
+          "weight": 55,
+          "category": "community",
+          "note": "2026-09-21 端点从 old.reddit.com 改为 www.reddit.com。Anthropic/Claude 动态与真实用户反馈；Anthropic 官方 blog 是 HTML 抓取（无 RSS），此源是其兜底，故为保留的 2 个之一。"
+        }
+      ]
+    },
+    "tier_4_products": {
+      "description": "第四层：AI产品与商业化",
+      "weight": 50,
+      "max_items_per_source": 10,
+      "feeds": [
+        {
+          "name": "Product Hunt (Atom Feed)",
+          "url": "https://www.producthunt.com/feed",
+          "type": "rss",
+          "weight": 55,
+          "category": "products",
+          "note": "Atom feed confirmed working"
+        }
+      ]
+    },
+    "chinese_sources": {
+      "description": "中文源（低权重辅助）",
+      "weight": 30,
+      "max_items_per_source": 8,
+      "feeds": [
+        {
+          "name": "量子位",
+          "url": "https://www.qbitai.com/feed",
+          "type": "rss",
+          "weight": 30,
+          "category": "chinese",
+          "note": "RSS confirmed working"
+        },
+        {
+          "name": "雷锋网 AI科技评论",
+          "url": "https://www.leiphone.com/feed",
+          "type": "rss",
+          "weight": 25,
+          "category": "chinese",
+          "note": "RSS confirmed working"
+        },
+        {
+          "name": "36氪",
+          "url": "https://36kr.com/feed",
+          "type": "rss",
+          "weight": 25,
+          "category": "chinese",
+          "note": "⚠️ 2026-09-21 实测：此 URL 返回 200 但 entries=0（feed 是空的，原文写的 'RSS confirmed working' 不成立）。已测试全部替代端点，结论是【不换】：feed-technology / feed-article / topics/1/feed 均 200 但 0 条；唯一有内容的是 feed-newsflash（20 条），但它是财经快讯流——用真实评分引擎实测，10 条中过闸的那 1 条是「ST椰岛：收到证监会立案告知书」，会把股市公告注入 AI 日报。宁可保留一个诚实的 EMPTY（现已纳入 health 的 empty_count），也不换一个往报告里灌噪音的源。是否彻底删除由用户决定。"
+        }
+      ]
+    },
+    "media_sources": {
+      "description": "科技媒体层（调整后权重）",
+      "weight": 40,
+      "max_items_per_source": 5,
+      "feeds": [
+        {
+          "name": "MIT Technology Review",
+          "url": "https://www.technologyreview.com/feed/",
+          "type": "rss",
+          "weight": 45,
+          "category": "media"
+        },
+        {
+          "name": "TechCrunch AI",
+          "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+          "type": "rss",
+          "weight": 40,
+          "category": "media"
+        },
+        {
+          "name": "The Verge AI",
+          "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+          "type": "rss",
+          "weight": 25,
+          "category": "media"
+        },
+        {
+          "name": "VentureBeat AI",
+          "url": "https://venturebeat.com/category/ai/feed/",
+          "type": "rss",
+          "weight": 25,
+          "category": "media"
+        }
+      ]
+    }
+  },
+  "filtering_criteria": {
+    "description": "情报过滤机制 — 只有满足以下至少 1 条的信息才值得分析",
+    "rules": [
+      {
+        "id": "workflow_change",
+        "question": "会改变普通人工作流吗？",
+        "weight": 20
+      },
+      {
+        "id": "productivity_boost",
+        "question": "会提升生产效率吗？",
+        "weight": 20
+      },
+      {
+        "id": "automation_push",
+        "question": "会推动AI自动化吗？",
+        "weight": 20
+      },
+      {
+        "id": "lower_barrier",
+        "question": "会降低创业门槛吗？",
+        "weight": 20
+      },
+      {
+        "id": "content_production",
+        "question": "会改变内容生产方式吗？",
+        "weight": 15
+      },
+      {
+        "id": "side_hustle",
+        "question": "会产生新副业机会吗？",
+        "weight": 15
+      },
+      {
+        "id": "career_impact",
+        "question": "会影响未来职业结构吗？",
+        "weight": 15
+      },
+      {
+        "id": "community_growth",
+        "question": "GitHub/社区是否开始快速增长？",
+        "weight": 10
+      },
+      {
+        "id": "multi_source_signal",
+        "question": "多个高质量源是否同时讨论？",
+        "weight": 10
+      }
+    ],
+    "minimum_criteria_score": 15,
+    "max_items_for_report": 8,
+    "report_max_per_source": 4,
+    "_note_report_max_per_source": "单个信源最多进入 prompt 的条目数（0 = 关闭，恢复纯按分截断）。因为 _total_score 被 source_weight 主导（它是每源的常数，60-200，大于时效+热度+长期价值之和），纯按分截断会让一个源吃掉大半名额 —— 2026-09-20 是 GitHub Trending Python 占 12/16。注意与 sources.<tier>.max_items_per_source 区分：那个是每源【抓取】上限，这个是进入【报告】的上限。",
+    "_note_threshold_conflict": "⚠️ minimum_criteria_score=15 目前无人读取（全库仅此一处）。实际生效的闸门是 domains/ai/scoring_config.json 的 min_relevance_score=10 —— 而 10 恰好等于最弱规则 community_growth 的分值，即『trending』一个词就足以过闸。两个值该以哪个为准需要你决定，见 AUDIT_2026-09-21.md。"
+  },
+  "token_budget": {
+    "raw_json_max_chars_per_item": 800,
+    "report_max_total_chars": 15000,
+    "fetch_timeout_seconds": 20,
+    "max_items_per_feed": 10
+  }
+}
